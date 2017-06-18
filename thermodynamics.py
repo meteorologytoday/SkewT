@@ -19,17 +19,26 @@ water_boiling_point = zeroK + 100.0
 
 def saturated_vapor_pressure(T):
 	global R_vap, water_boiling_point
+	if T == 0:
+		print('!!!')
 	return unit_atm * np.exp(- latent_heat / R_vap * (1.0/T - 1.0 / water_boiling_point) )
 
-def saturated_water_mass(T, p):  # kg / kg
+def saturated_vapor_mass(T, p):  # kg / kg
 	global R_vap, R_d
 	es = saturated_vapor_pressure(T)
 	return ( R_d / R_vap ) * (es / p)
 
+def inv_saturated_vapor_mass(w, p):
+	global R_vap, R_d
+	return inv_saturated_vapor_pressure(w * p * R_vap / R_d)
+
 def cal_dew(T, p, RH):
+	return inv_saturated_vapor_pressure(RH * saturated_vapor_pressure(T)) 
+	
+
+def inv_saturated_vapor_pressure(p_vap):
 	global R_vap, latent_heat, unit_atm, water_boiling_point
-	tmp = RH * saturated_vapor_pressure(T)
-	return 1.0 / ( 1.0 / water_boiling_point - np.log(tmp / unit_atm) * R_vap / latent_heat) if tmp != 0 else np.nan
+	return 1.0 / ( 1.0 / water_boiling_point - np.log(p_vap / unit_atm) * R_vap / latent_heat) if p_vap != 0.0 else np.nan
 	
 
 def cal_theta(T, p):
@@ -37,7 +46,7 @@ def cal_theta(T, p):
 
 def cal_theta_e(T, p):
 	global latent_heat, C_p
-	return cal_theta(T, p) + latent_heat * saturated_water_mass(T, p) / C_p
+	return cal_theta(T, p) + latent_heat * saturated_vapor_mass(T, p) / C_p
 
 def EXENER(p):
 	global kappa, p_ref
@@ -52,3 +61,6 @@ def theta_e_fprime_helper(T, p):
 
 def solve_T_given_theta_e_and_p(theta_e, p):
 	return newton((lambda T: theta_e_helper(theta_e, T, p)), theta_e, fprime=(lambda T: theta_e_fprime_helper(T, p)), tol=1e-2, maxiter=50)
+
+#def solve_T_given_mixing_ratio_and_p(mix_r, p):
+#	return newton((lambda T: mix_r - saturated_vapor_mass(T, p)), 0, fprime=None, tol=1e-5, maxiter=50)

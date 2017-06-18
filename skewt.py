@@ -40,14 +40,12 @@ wlogp_vec = weight * logp_vec
 
 Tlogp_range = T_range + weight * np.log(p_ground)
 barb_x = Tlogp_range[-1]+20
-print(T_range)
-print(logp_range)
-print(Tlogp_range)
+
 p_lines = np.array([1000, 850, 700, 500, 400, 300, 250, 200, 150, 100]) * 100.0
 T_lines = np.arange(-100, 60, 10) + zeroK 
 dry_lines = np.arange(-30, 180, 10) + zeroK
 wet_lines = np.arange(10, 180, 10) + zeroK
-
+mixing_ratio_lines = np.array([7.63]) / 1000.0
 # calculate figure size
 graph_size = [4.0, 6.0]
 space = {
@@ -92,18 +90,12 @@ for p in p_lines:
 for T in T_lines: 
 	T_vec = np.array([T] * 2)
 	Tlogp_vec = T_vec + weight * logp_range
-#	for i,_ in enumerate(T_vec):
-#		print("p: %.2f, T: %.2f, theta: %.2f, Tlogp: %.2f or %.2f" % (p_vec[i], T_vec[i], theta, T_vec[i] + weight * np.log(p_vec[i]), Tlogp_vec[i]))#wlogp_vec[i]))
 	ax.plot(Tlogp_vec, logp_range, color='#888888', linewidth=1)
-
-
 
 # dry line:
 for theta in dry_lines: 
 	T_vec = (p_vec / p_ref) ** kappa * theta
 	Tlogp_vec = T_vec + wlogp_vec
-#	for i,_ in enumerate(T_vec):
-#		print("p: %.2f, T: %.2f, theta: %.2f, Tlogp: %.2f or %.2f" % (p_vec[i], T_vec[i], theta, T_vec[i] + weight * np.log(p_vec[i]), Tlogp_vec[i]))#wlogp_vec[i]))
 	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1)
 
 # wet line:
@@ -112,12 +104,11 @@ for theta_e in wet_lines:
 	Tlogp_vec = T_vec + wlogp_vec
 	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1, dashes=(10,5))
 
-#ax2 = ax.twiny()
-#ax2.set_xlim(np.amin(wlogp_vec), np.amax(wlogp_vec))
-#ax2.set_xlim([-50, 50])
-#ax2.plot(wlogp_vec, logp_vec)
-#ax2.set_ylim([0,1])
-#ax2.set_yticks([])
+# mixing ratio line:
+for mix_r in mixing_ratio_lines: 
+	T_vec = np.array([inv_saturated_vapor_mass(mix_r, p) for p in p_vec])
+	Tlogp_vec = T_vec + wlogp_vec
+	ax.plot(Tlogp_vec, logp_vec, color='g', linewidth=1, dashes=(3,3))
 
 
 # Sounding part
@@ -148,25 +139,5 @@ if sounding is not None:
 	ax.plot([barb_x]*2, logp_range, color='k', linewidth=1, clip_on=False)
 	ax.barbs([barb_x]*len(U), s_logp[selected], U, V, WS, flagcolor='k', barbcolor='k', fill_empty=False, rounding=True, sizes=dict(emptybarb=0.1, spacing=0.1, height=0.3), clip_on=False)
 	
-	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 pplt.show()
 
