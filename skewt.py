@@ -14,8 +14,6 @@ from matplotlib.collections import PatchCollection
 from Sounding import Sounding
 from thermodynamics import *
 
-
-
 rc('font', **{'family':'sans-serif', 'serif': 'Bitstream Vera Serif', 'sans-serif': 'MS Reference Sans Serif', 'size': 15.0, 'weight' : 100})
 rc('axes', **{'labelsize': 15.0, 'labelweight': 100})
 rc('mathtext', **{'fontset':'stixsans'});
@@ -116,7 +114,7 @@ ax.invert_yaxis()
 
 # labels
 ax.text(0.5, 1.02, title, verticalalignment='bottom', horizontalalignment='center', fontsize=25, transform=ax.transAxes)
-ax.text(0.5, -0.05, r'$T - \mathrm{log} \, p$', verticalalignment='top', horizontalalignment='center', fontsize=20, transform=ax.transAxes)
+ax.text(0.5, -0.08, r'$T - \mathrm{log} \, p$', verticalalignment='top', horizontalalignment='center', fontsize=20, transform=ax.transAxes)
 ax.text(-0.1, 0.5, r'$\mathrm{log} \, p$', verticalalignment='center', horizontalalignment='right', fontsize=20, transform=ax.transAxes, rotation=90)
 
 
@@ -186,7 +184,7 @@ if sounding is not None:
 	V = - WS * np.cos(WD * np.pi / 180.0)
 
 	ax.barbs([barb_x]*len(U), s_logp[selected], U, V, WS, flagcolor='k', barbcolor='k', fill_empty=False, rounding=True, sizes=dict(emptybarb=0.1, spacing=0.1, height=0.3), clip_on=False)
-	
+
 fig.savefig("test.png", dpi=300)
 pplt.show()
 
