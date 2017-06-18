@@ -15,14 +15,22 @@ p_ground = 101300.0
 kappa = R_d / C_p
 zeroK = 273.15
 
+water_boiling_point = zeroK + 100.0
+
 def saturated_vapor_pressure(T):
-	global R_vap
-	return unit_atm * np.exp(- latent_heat / R_vap * (1.0/T - 1.0 / (zeroK + 100.0)) )
+	global R_vap, water_boiling_point
+	return unit_atm * np.exp(- latent_heat / R_vap * (1.0/T - 1.0 / water_boiling_point) )
 
 def saturated_water_mass(T, p):
 	global R_vap, R_d
 	es = saturated_vapor_pressure(T)
 	return ( R_d / R_vap ) * (es / p)
+
+def cal_dew(T, p, RH):
+	global R_vap, latent_heat, unit_atm, water_boiling_point
+	tmp = RH * saturated_vapor_pressure(T)
+	return 1.0 / ( 1.0 / water_boiling_point - np.log(tmp / unit_atm) * R_vap / latent_heat) if tmp != 0 else np.nan
+	
 
 def cal_theta(T, p):
 	return T / EXENER(p)

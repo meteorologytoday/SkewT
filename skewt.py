@@ -4,7 +4,7 @@ import matplotlib.font_manager as fm;
 import matplotlib as mplt;
 import sys
 import numpy as np
-
+from Sounding import Sounding
 from thermodynamics import *
 
 #matplotlib.use('Agg')
@@ -25,6 +25,8 @@ mplt.rcParams['ytick.major.pad']='12';
 print("%s: %d"%(fm.FontProperties().get_name(),fm.FontProperties().get_weight()));
 
 
+sounding = Sounding(sys.argv[1]) if len(sys.argv) >= 2 else None
+
 weight = -30.0
 
 
@@ -41,7 +43,7 @@ print(T_range)
 print(logp_range)
 print(Tlogp_range)
 p_lines = np.array([1000, 850, 700, 500, 400, 300, 250, 200, 150, 100]) * 100.0
-T_lines = np.arange(-30, 50, 10) + zeroK 
+T_lines = np.arange(-100, 60, 10) + zeroK 
 dry_lines = np.arange(-30, 180, 10) + zeroK
 wet_lines = np.arange(10, 180, 10) + zeroK
 
@@ -85,6 +87,15 @@ ax.invert_yaxis()
 for p in p_lines:
 	ax.plot(Tlogp_range, [np.log(p)]*2, color='k', linewidth=1)
 
+# T line:
+for T in T_lines: 
+	T_vec = np.array([T] * 2)
+	Tlogp_vec = T_vec + weight * logp_range
+#	for i,_ in enumerate(T_vec):
+#		print("p: %.2f, T: %.2f, theta: %.2f, Tlogp: %.2f or %.2f" % (p_vec[i], T_vec[i], theta, T_vec[i] + weight * np.log(p_vec[i]), Tlogp_vec[i]))#wlogp_vec[i]))
+	ax.plot(Tlogp_vec, logp_range, color='#888888', linewidth=1)
+
+
 
 # dry line:
 for theta in dry_lines: 
@@ -106,6 +117,23 @@ for theta_e in wet_lines:
 #ax2.plot(wlogp_vec, logp_vec)
 #ax2.set_ylim([0,1])
 #ax2.set_yticks([])
+
+
+# Sounding part
+if sounding is not None:
+	data = sounding.data
+	s_p = data['PRE']
+	s_logp   = np.log(s_p)
+	s_wlogp  = weight * s_logp
+	
+	s_Tlogp = data['TEMP']  + s_wlogp
+	s_dewlogp = data['DEW'] + s_wlogp
+
+	ax.plot(s_Tlogp, s_logp, color='b', linewidth=1)
+	ax.plot(s_dewlogp, s_logp, color='r', linewidth=1)
+
+	
+	
 
 pplt.show()
 
