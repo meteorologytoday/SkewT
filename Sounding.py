@@ -3,15 +3,15 @@ import csv
 from thermodynamics import *
 
 class Sounding:
-	def __init__(self, fname):
+	def __init__(self, fname, truncate=True):
 		self.fname = fname
 		self.data = {}
-		self.header = ['TIME', 'HGT', 'PRE', 'TEMP', 'RH', 'WS', 'WD', 'ASC']
+		self.default_header = ['TIME', 'HGT', 'PRE', 'TEMP', 'RH', 'WS', 'WD', 'ASC']
 		self.load()
-		self.process()
+		self.process(truncate)
 
 	def load(self):
-		for key in self.header:
+		for key in self.default_header:
 			self.data[key] = []
 
 		with open(self.fname, 'r') as csvfile:
@@ -20,13 +20,23 @@ class Sounding:
 				if len(row) != 8:
 					continue
 				
-				for i, key in enumerate(self.header):
+				for i, key in enumerate(self.default_header):
 					self.data[key].append(float(row[i]))
 
-		for key in self.header:
+		for key in self.default_header:
 			self.data[key] = np.array(self.data[key])
 
-	def process(self):
+	def process(self, truncate):
+		if truncate:
+			trunc_i = 0
+			for i in range(len(self.data['PRE']) - 1):
+				if self.data['PRE'][i] < 500.0 and self.data['PRE'][i] < self.data['PRE'][i+1]:
+					trunc_i = i
+					break
+
+			for key in self.default_header:
+				self.data[key] = self.data[key][0:trunc_i + 1]
+
 		# Transform to SI unit
 		self.data['TEMP'] += zeroK
 		print(self.data['TEMP'])

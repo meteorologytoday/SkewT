@@ -39,6 +39,7 @@ logp_vec = np.log(p_vec)
 wlogp_vec = weight * logp_vec
 
 Tlogp_range = T_range + weight * np.log(p_ground)
+barb_x = Tlogp_range[-1]+20
 print(T_range)
 print(logp_range)
 print(Tlogp_range)
@@ -132,8 +133,40 @@ if sounding is not None:
 	ax.plot(s_Tlogp, s_logp, color='b', linewidth=1)
 	ax.plot(s_dewlogp, s_logp, color='r', linewidth=1)
 
+	# wind
+
+	upper_bound_i = 0
+	for i, logp in enumerate(s_logp):
+		if logp < logp_range[0]:
+			upper_bound_i = i
+			break	
+	selected = slice(None,upper_bound_i,100)
+	WS = data['WS'][selected]
+	WD = data['WD'][selected]
+	U = - WS * np.sin(WD * np.pi / 180.0)
+	V = - WS * np.cos(WD * np.pi / 180.0)
+	ax.plot([barb_x]*2, logp_range, color='k', linewidth=1, clip_on=False)
+	ax.barbs([barb_x]*len(U), s_logp[selected], U, V, WS, flagcolor='k', barbcolor='k', fill_empty=False, rounding=True, sizes=dict(emptybarb=0.1, spacing=0.1, height=0.3), clip_on=False)
 	
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 pplt.show()
 

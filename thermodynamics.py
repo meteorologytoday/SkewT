@@ -21,7 +21,7 @@ def saturated_vapor_pressure(T):
 	global R_vap, water_boiling_point
 	return unit_atm * np.exp(- latent_heat / R_vap * (1.0/T - 1.0 / water_boiling_point) )
 
-def saturated_water_mass(T, p):
+def saturated_water_mass(T, p):  # kg / kg
 	global R_vap, R_d
 	es = saturated_vapor_pressure(T)
 	return ( R_d / R_vap ) * (es / p)
