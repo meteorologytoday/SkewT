@@ -39,9 +39,7 @@ class Sounding:
 
 		# Transform to SI unit
 		self.data['TEMP'] += zeroK
-		print(self.data['TEMP'])
 		self.data['PRE']  *= 100.0
-
 		self.data['RH']   /= 100.0
 
 		# Dew point
