@@ -19,7 +19,6 @@ class Sounding:
 			for row in rdr:
 				if len(row) != 8:
 					continue
-				
 				for i, key in enumerate(self.default_header):
 					self.data[key].append(float(row[i]))
 
@@ -46,4 +45,28 @@ class Sounding:
 		dew = np.zeros((len(self.data['RH']),))
 		for i in range(len(dew)):
 			dew[i] = cal_dew(self.data['TEMP'][i], self.data['PRE'][i], self.data['RH'][i])
+
 		self.data['DEW'] =  dew
+
+		self.genLCL()
+
+	def genLCL(self):
+		# LCL
+		ref_T  = self.data['TEMP'][0]
+		ref_p  = self.data['PRE'][0]
+		ref_RH = self.data['RH'][0]
+		ref_q  = vapor_pressure_to_mixing_ratio(ref_p, saturated_vapor_pressure(ref_T) * ref_RH)
+		ref_theta = T_to_theta(ref_T, ref_p)
+
+		self.data['LCL'] = cal_LCL(ref_T, ref_p, ref_RH, mode='RH')
+
+		# parcel line
+		parcel = np.zeros((len(self.data['TEMP']),))
+		LCL_theta_e = cal_theta_e(ref_T, ref_p, saturated_vapor_mass(theta_to_T(ref_theta, self.data['LCL']), self.data['LCL']))
+		for i in range(len(parcel)):
+			if self.data['PRE'][i] > self.data['LCL']: # below LCL, dry line
+				parcel[i] = theta_to_T(ref_theta, self.data['PRE'][i])
+			else: # above LCL, wet line
+				parcel[i] = solve_T_given_theta_es_and_p(LCL_theta_e, self.data['PRE'][i])
+		
+		self.data['PARCEL_T'] = parcel

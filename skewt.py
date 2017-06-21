@@ -57,12 +57,13 @@ sounding = Sounding(fname) if fname is not None else None
 
 weight = -30.0
 T_color = '#dddddd'
-
-p_range = np.array([100e2, p_ground])
+p_ground = p_ref
+p_range = np.array([100e2, 1100e2])
 T_range = np.array([-35, 50]) + zeroK
 logp_range = np.log(p_range)
 
-p_vec = np.linspace(p_range[0], p_range[1], num=100)
+p_vec  = np.linspace(p_range[0], p_ground, num=100)
+p2_vec = np.linspace(p_range[0], p_range[1], num=100)
 logp_vec = np.log(p_vec)
 wlogp_vec = weight * logp_vec
 
@@ -100,6 +101,23 @@ print("Creating canvas...")
 fig = pplt.figure(figsize=figsize)
 ax = fig.add_axes(rect, autoscale_on=False)
 
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+hshrink = [0.7, 0.5]
+wshrink = 0.7
+height = abs(logp_range[1] - logp_range[0])
+width  = abs(Tlogp_range[1] - Tlogp_range[0])
+pts = np.array([
+	[Tlogp_range[1], logp_range[0]],
+	[Tlogp_range[1], logp_range[0] + height * hshrink[0]],
+	[Tlogp_range[0] + wshrink * width, logp_range[0] + hshrink[1] *height],
+	[Tlogp_range[0] + wshrink * width, logp_range[0]],
+])
+ax.add_patch(Polygon(pts, facecolor='#ffffff', edgecolor='#ffffff', zorder=100)) 
+ax.plot([Tlogp_range[0], pts[3][0], pts[2][0], pts[1][0], Tlogp_range[1]], [logp_range[0], logp_range[0], pts[2][1], pts[1][1], logp_range[1]], color='k', linewidth=default_linewidth, clip_on=False, zorder=101)
+
+
 ax.set_yticks(np.log(p_lines))
 ax.set_yticklabels(["%d" % int(p/100) for p in p_lines])
 
@@ -114,8 +132,8 @@ ax.invert_yaxis()
 
 # labels
 ax.text(0.5, 1.02, title, verticalalignment='bottom', horizontalalignment='center', fontsize=25, transform=ax.transAxes)
-ax.text(0.5, -0.08, r'$T - \mathrm{log} \, p$', verticalalignment='top', horizontalalignment='center', fontsize=20, transform=ax.transAxes)
-ax.text(-0.1, 0.5, r'$\mathrm{log} \, p$', verticalalignment='center', horizontalalignment='right', fontsize=20, transform=ax.transAxes, rotation=90)
+ax.text(0.5, -0.08, r'Temperature [$\degree  \mathrm{C}$]', verticalalignment='top', horizontalalignment='center', fontsize=20, transform=ax.transAxes)
+ax.text(-0.1, 0.5, r'Pressure [hPa]', verticalalignment='center', horizontalalignment='right', fontsize=20, transform=ax.transAxes, rotation=90)
 
 
 # p line
@@ -145,7 +163,7 @@ for theta in dry_lines:
 
 # wet line:
 for theta_e in wet_lines: 
-	T_vec = np.array([solve_T_given_theta_e_and_p(theta_e, p) for p in p_vec])
+	T_vec = np.array([solve_T_given_theta_es_and_p(theta_e, p) for p in p_vec])
 	Tlogp_vec = T_vec + wlogp_vec
 	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1, dashes=(10,5))
 
@@ -154,6 +172,12 @@ for mix_r in mixing_ratio_lines:
 	T_vec = np.array([inv_saturated_vapor_mass(mix_r, p) for p in p_vec])
 	Tlogp_vec = T_vec + wlogp_vec
 	ax.plot(Tlogp_vec, logp_vec, color='g', linewidth=1, dashes=(3,3))
+
+	mix_r *= 1000
+	ax.text(Tlogp_vec[-1], logp_vec[-1] + 0.03, ("%.1f" if mix_r < 1 else "%.0f") % (mix_r, ), color='g', horizontalalignment='center', verticalalignment='top', fontsize=10)
+
+
+ax.text(zeroK + 42.0 + weight * np.log(p_ground), logp_vec[-1] + 0.03, r'g / kg', color='g', horizontalalignment='center', verticalalignment='top', fontsize=10)
 
 # wind barb line	
 ax.plot([barb_x]*2, logp_range, color='k', linewidth=1, clip_on=False)
@@ -168,8 +192,12 @@ if sounding is not None:
 	s_Tlogp = data['TEMP']  + s_wlogp
 	s_dewlogp = data['DEW'] + s_wlogp
 
+	# parcel
+	s_parcel_Tlogp = data['PARCEL_T'] + s_wlogp
+
 	ax.plot(s_Tlogp, s_logp, color='b', linewidth=1)
 	ax.plot(s_dewlogp, s_logp, color='r', linewidth=1)
+	ax.plot(s_parcel_Tlogp, s_logp, color='#ee00ee', linewidth=1)
 
 	# wind
 	upper_bound_i = 0
@@ -185,6 +213,12 @@ if sounding is not None:
 
 	ax.barbs([barb_x]*len(U), s_logp[selected], U, V, WS, flagcolor='k', barbcolor='k', fill_empty=False, rounding=True, sizes=dict(emptybarb=0.1, spacing=0.1, height=0.3), clip_on=False)
 
+	beg = logp_range[1] - height
+	for key in ['LCL', 'CAPE']:
+		if key in data:
+			print(key)
+			ax.text(Tlogp_range[0] + width, beg, "%s : %.1f" % (key, data[key]), horizontalalignment='right', verticalalignment='top', zorder=200)
+			beg += height / 20.0
 fig.savefig("test.png", dpi=300)
 pplt.show()
 
