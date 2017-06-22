@@ -45,10 +45,12 @@ def inv_saturated_vapor_mass(w, p):
 	# analytic sol
 	return inv_saturated_vapor_pressure(p / (1.0 + R_d / R_vap / w))
 
+def RH_to_q(T, p, RH):
+	return vapor_pressure_to_mixing_ratio(p, saturated_vapor_pressure(T) * RH)
+
 def cal_dew(T, p, RH):
 	return inv_saturated_vapor_pressure(RH * saturated_vapor_pressure(T)) 
 	
-
 def cal_LCL_helper(p, theta, q):
 	"""
 
