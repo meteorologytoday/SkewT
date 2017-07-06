@@ -2,12 +2,13 @@ import numpy as np
 from scipy.optimize import newton
 
 unit_atm = 101300.0
-latent_heat = 2.25e6
+latent_heat = 2.257e6
 gas_const = 8.3147
 R_d   = gas_const / 28.9e-3
 R_vap = gas_const / 18.0e-3
 C_v = 2.5 * R_d
 C_p = R_d + C_v
+epsilon = R_d / R_vap # 0.622
 THETA_vap = latent_heat * R_d / C_p / R_vap
 
 p_ref = 100000.0
@@ -115,4 +116,36 @@ def theta_es_fprime_helper(T, p):
 def solve_T_given_theta_es_and_p(theta_e, p):
 	# initial guess is important
 	return newton((lambda T: theta_es_helper(theta_e, T, p)), zeroK, fprime=(lambda T: theta_es_fprime_helper(T, p)), tol=1e-3, maxiter=50)
+
+
+
+def pseudo_adiabatic_dTdp(T, p):
+	global latent_heat, epsilon, kappa, C_p, R_vap
+	L_over_CpT = latent_heat /  C_p / T
+	e_vs = saturated_vapor_pressure(T)
+	dw_vsdp = - epsilon / e_vs / (p / e_vs - 1.0) ** 2.0
+	dw_vsdT = latent_heat * p / (R_vap * T**2.0) * (- dw_vsdp)
+
+	return (kappa / p - L_over_CpT * dw_vsdp) / (1.0 / T + L_over_CpT * dw_vsdT)
+
+def gen_pseudo_adiabatic_line(start_T, p_vec):
+	T_vec = np.zeros((len(p_vec),))
+	T_vec[0] = start_T
+
+	closure_p = 0
+	def rk4_helper(T):
+		return pseudo_adiabatic_dTdp(T, closure_p)
+
+	for i in range(1, len(p_vec)):
+		closure_p = p_vec[i-1]
+		T_vec[i] = rk4(T_vec[i-1], rk4_helper, p_vec[i] - p_vec[i-1])
+
+	return T_vec
+
+def rk4(x, dxfunc, dt):
+	dx1 = dt * dxfunc(x)
+	dx2 = dt * dxfunc(x + dx1 / 2.0)
+	dx3 = dt * dxfunc(x + dx2 / 2.0)
+	dx4 = dt * dxfunc(x + dx3)
+	return x + (dx1 + 2.0 * dx2 + 2.0 * dx3 + dx4) / 6.0
 

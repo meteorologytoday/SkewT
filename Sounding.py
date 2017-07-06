@@ -1,6 +1,7 @@
 import numpy as np
 import csv
 from thermodynamics import *
+from scipy import interpolate
 
 class Sounding:
 	def __init__(self, fname, truncate=True):
@@ -41,6 +42,7 @@ class Sounding:
 		self.data['TEMP'] += zeroK
 		self.data['PRE']  *= 100.0
 		self.data['RH']   /= 100.0
+		self.data['WS']   *= 1.94384449
 
 		# Dew point
 		dew = np.zeros((len(self.data['RH']),))
@@ -64,13 +66,18 @@ class Sounding:
 
 		# parcel line
 		parcel = np.zeros((self.data_length,))
-		LCL_theta_e = cal_theta_e(ref_T, ref_p, saturated_vapor_mass(theta_to_T(ref_theta, lcl), lcl))
+
+		LCL_i = None
 		for i in range(len(parcel)):
 			if self.data['PRE'][i] > lcl: # below LCL, dry line
 				parcel[i] = theta_to_T(ref_theta, self.data['PRE'][i])
-			else: # above LCL, wet line
-				parcel[i] = solve_T_given_theta_es_and_p(LCL_theta_e, self.data['PRE'][i])
-		
+				LCL_i = i
+			else:                         # arrive LCL
+				break
+
+		p_vec = np.linspace(self.data['PRE'][LCL_i], np.amin(self.data['PRE']), num=500)
+		pseudo_line = interpolate.interp1d(p_vec, gen_pseudo_adiabatic_line(parcel[LCL_i], p_vec))
+		parcel[LCL_i+1:] = pseudo_line(self.data['PRE'][LCL_i+1:])
 		return lcl, parcel
 	
 

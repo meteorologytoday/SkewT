@@ -59,15 +59,15 @@ mplt.rcParams['ytick.major.pad']='12';
 
 sounding = Sounding(input_fname) if input_fname is not None else None
 
-weight = -30.0
+weight = -35.44
 T_color = '#dddddd'
 p_ground = p_ref
 p_range = np.array([100e2, 1100e2])
-T_range = np.array([-35, 50]) + zeroK
+T_range = np.array([-35, 55]) + zeroK
 logp_range = np.log(p_range)
 
-p_vec  = np.linspace(p_range[0], p_ground, num=100)
-p2_vec = np.linspace(p_range[0], p_range[1], num=100)
+p_vec  = np.linspace(p_range[0], p_ground, num=1000)
+p2_vec = np.linspace(p_range[0], p_range[1], num=1000)
 logp_vec = np.log(p_vec)
 wlogp_vec = weight * logp_vec
 
@@ -76,14 +76,14 @@ cape_range = np.array([-500, 3000.0])
 barb_x = Tlogp_range[-1]+8
 
 cape_ticks = np.array([-500, 0, 1000, 2000, 3000])
-p_lines = np.array([1000, 850, 700, 500, 400, 300, 250, 200, 150, 100]) * 100.0
+p_lines = np.array([1000, 850, 700, 600, 500, 400, 300, 250, 200, 150, 100]) * 100.0
 T_lines = np.arange(-100, 60, 10) + zeroK 
 dry_lines = np.arange(-30, 180, 10) + zeroK
 wet_lines = np.arange(10, 180, 10) + zeroK
 mixing_ratio_lines = np.array([0.7, 1, 2, 4, 7, 10, 16, 24, 32, 40]) / 1000.0
 
 # calculate figure size
-main_graph_size = np.array([8.0, 12.0])
+main_graph_size = np.array([9.0, 12.0])
 cape_graph_size = np.array([3.0, 12.0])
 space = {
     'wspace': 2.0,
@@ -195,11 +195,19 @@ for theta in dry_lines:
 	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1)
 
 # wet line:
-for theta_e in wet_lines: 
-	T_vec = np.array([solve_T_given_theta_es_and_p(theta_e, p) for p in p_vec])
+#for theta_e in wet_lines: 
+#	T_vec = np.array([solve_T_given_theta_es_and_p(theta_e, p) for p in p_vec])
+#	Tlogp_vec = T_vec + wlogp_vec
+#	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1, dashes=(10,5))
+
+# wet line:
+rev_p_vec = p_vec[::-1]
+for theta_e in np.arange(0, 41, 5) + zeroK: 
+	T_vec = gen_pseudo_adiabatic_line(theta_e, rev_p_vec)[::-1]
 	Tlogp_vec = T_vec + wlogp_vec
 	ax.plot(Tlogp_vec, logp_vec, color='k', linewidth=1, dashes=(10,5))
 
+#
 # mixing ratio line:
 for mix_r in mixing_ratio_lines: 
 	T_vec = np.array([inv_saturated_vapor_mass(mix_r, p) for p in p_vec])
@@ -208,7 +216,6 @@ for mix_r in mixing_ratio_lines:
 
 	mix_r *= 1000
 	ax.text(Tlogp_vec[-1], logp_vec[-1] + 0.03, ("%.1f" if mix_r < 1 else "%.0f") % (mix_r, ), color='g', horizontalalignment='center', verticalalignment='top', fontsize=10)
-
 
 ax.text(zeroK + 42.0 + weight * np.log(p_ground), logp_vec[-1] + 0.03, r'g / kg', color='g', horizontalalignment='center', verticalalignment='top', fontsize=10)
 
@@ -230,15 +237,15 @@ if sounding is not None:
 
 	# parcel
 	s_parcel_Tlogp = data['PARCEL_T'] + s_wlogp
-	s_parcel_Tlogp_p10 = data['PARCEL_T_p10'] + s_wlogp
+	#s_parcel_Tlogp_p10 = data['PARCEL_T_p10'] + s_wlogp
 	
 	ax.plot(s_Tlogp, s_logp, color='b', linewidth=2)
 	ax.plot(s_dewlogp, s_logp, color='r', linewidth=2)
 	ax.plot(s_parcel_Tlogp, s_logp, color='#ee00ee', linewidth=2)
-	ax.plot(s_parcel_Tlogp_p10, s_logp, color='#ee00ee', linewidth=2)
+	#ax.plot(s_parcel_Tlogp_p10, s_logp, color='#ee00ee', linewidth=2)
 
 	skew_ax.plot(s_cape_int    , s_logp, color='k')
-	skew_ax.plot(s_cape_int_p10, s_logp, color='r')
+	#skew_ax.plot(s_cape_int_p10, s_logp, color='r')
 
 	# wind
 	upper_bound_i = 0
@@ -257,10 +264,15 @@ if sounding is not None:
 
 	beg = logp_range[1] - height
 	if 'LCL' in data:
-		ax.text(Tlogp_range[0] + width, beg, "LCL : %.1f" % (data['LCL']/100.0), horizontalalignment='right', verticalalignment='top', zorder=200)
-		beg += height / 20.0
+		ax.text(Tlogp_range[0] + width, beg, "LCL : %.0f" % (data['LCL']/100.0), horizontalalignment='right', verticalalignment='top', zorder=200)
+
+	beg += height / 20.0
+	if 'CAPE_int' in data:
+		ax.text(Tlogp_range[0] + width, beg, "CAPE: %.0f" % (np.amax(data['CAPE_int']),), horizontalalignment='right', verticalalignment='top', zorder=200)
+
+	beg += height / 20.0
 	if 'CAPE_int_p10' in data:
-		ax.text(Tlogp_range[0] + width, beg, "CAPEp10 Max: %.1f" % (np.amax(data['CAPE_int_p10']),), horizontalalignment='right', verticalalignment='top', zorder=200)
+		ax.text(Tlogp_range[0] + width, beg, "CAPEp10 Max: %.0f" % (np.amax(data['CAPE_int_p10']),), horizontalalignment='right', verticalalignment='top', zorder=200)
 		beg += height / 20.0
 
 if output_fname is not None:
